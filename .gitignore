@@ -1,0 +1,9 @@
+.DS_Store
+.build
+DerivedData
+xcuserdata
+*.xcuserstate
+.canvenv
+firmware/**/build/
+tools/**/__pycache__/
+*.pyc
