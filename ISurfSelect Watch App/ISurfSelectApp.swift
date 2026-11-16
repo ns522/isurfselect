@@ -1,9 +1,9 @@
-import SurfSelectCore
+import ISurfSelectCore
 import SwiftUI
 import WatchKit
 
 @main
-struct SurfSelectApp: App {
+struct ISurfSelectApp: App {
     @StateObject private var session = BoatSession()
 
     var body: some Scene {

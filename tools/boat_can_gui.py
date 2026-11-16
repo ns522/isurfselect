@@ -33,7 +33,7 @@ PAGE = """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Surf Select CAN tester</title>
+<title>isurfselect CAN tester</title>
 <style>
   body { font: 16px -apple-system, sans-serif; margin: 24px auto; max-width: 540px; color: #111; background: #f6f6f4; }
   h1 { font-size: 22px; margin: 0 0 12px; }
@@ -52,7 +52,7 @@ PAGE = """<!DOCTYPE html>
 </style>
 </head>
 <body>
-  <h1>Surf Select CAN tester</h1>
+  <h1>isurfselect CAN tester</h1>
   <section class="row">
     <select id="port"></select>
     <button id="connect">Connect</button>

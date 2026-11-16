@@ -1,4 +1,4 @@
-import SurfSelectCore
+import ISurfSelectCore
 import SwiftUI
 
 /// One screen for the boat: the same ride commands as the watch, plus wave shape.

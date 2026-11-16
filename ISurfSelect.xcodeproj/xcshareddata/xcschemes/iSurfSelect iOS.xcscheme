@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "A10000000000000000000006"
-               BuildableName = "Surf Select.app"
-               BlueprintName = "Surf Select"
-               ReferencedContainer = "container:SurfSelect.xcodeproj">
+               BlueprintIdentifier = "A10000000000000000000018"
+               BuildableName = "iSurfSelect iOS.app"
+               BlueprintName = "iSurfSelect iOS"
+               ReferencedContainer = "container:ISurfSelect.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -32,8 +32,8 @@
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = ""
-      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
@@ -44,9 +44,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "A10000000000000000000006"
-            BuildableName = "Surf Select.app"
-            ReferencedContainer = "container:SurfSelect.xcodeproj">
+            BlueprintIdentifier = "A10000000000000000000018"
+            BuildableName = "iSurfSelect iOS.app"
+            ReferencedContainer = "container:ISurfSelect.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -60,9 +60,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "A10000000000000000000006"
-            BuildableName = "Surf Select.app"
-            ReferencedContainer = "container:SurfSelect.xcodeproj">
+            BlueprintIdentifier = "A10000000000000000000018"
+            BuildableName = "iSurfSelect iOS.app"
+            ReferencedContainer = "container:ISurfSelect.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

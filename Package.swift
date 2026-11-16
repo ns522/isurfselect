@@ -3,17 +3,17 @@
 import PackageDescription
 
 let package = Package(
-    name: "SurfSelect",
+    name: "ISurfSelect",
     platforms: [
         .iOS(.v17),
         .macOS(.v14),
         .watchOS(.v10),
     ],
     products: [
-        .library(name: "SurfSelectCore", targets: ["SurfSelectCore"]),
+        .library(name: "ISurfSelectCore", targets: ["ISurfSelectCore"]),
     ],
     targets: [
-        .target(name: "SurfSelectCore"),
-        .testTarget(name: "SurfSelectCoreTests", dependencies: ["SurfSelectCore"]),
+        .target(name: "ISurfSelectCore"),
+        .testTarget(name: "ISurfSelectCoreTests", dependencies: ["ISurfSelectCore"]),
     ]
 )

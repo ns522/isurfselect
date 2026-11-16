@@ -77,7 +77,7 @@ public final class BoatCentral: NSObject, ObservableObject {
         songSubscribed = false
     }
 
-    private func isSurfSelect(_ peripheral: CBPeripheral, advertisementData: [String: Any]) -> Bool {
+    private func isISurfSelect(_ peripheral: CBPeripheral, advertisementData: [String: Any]) -> Bool {
         if peripheral.name == BoatBluetooth.localName {
             return true
         }
@@ -152,7 +152,7 @@ extension BoatCentral: @MainActor CBCentralManagerDelegate {
         advertisementData: [String: Any],
         rssi RSSI: NSNumber
     ) {
-        guard running, self.peripheral == nil, isSurfSelect(peripheral, advertisementData: advertisementData) else {
+        guard running, self.peripheral == nil, isISurfSelect(peripheral, advertisementData: advertisementData) else {
             return
         }
         central.stopScan()

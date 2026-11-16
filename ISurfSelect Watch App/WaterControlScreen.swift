@@ -1,4 +1,4 @@
-import SurfSelectCore
+import ISurfSelectCore
 import SwiftUI
 import WatchKit
 

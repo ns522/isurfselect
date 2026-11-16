@@ -1,11 +1,11 @@
-// Surf Select 3.0 CAN-to-BLE bridge for classic ESP32.
+// isurfselect CAN-to-BLE bridge for classic ESP32.
 //
 // Hardware:
 //   - CAN 250 kbit/s (29-bit extended) on GPIO5 (TX) and GPIO4 (RX)
-//   - Arduino BLE peripheral ("Surf Select") supporting up to 3 simultaneous centrals
+//   - Arduino BLE peripheral ("iSurfSelect") supporting up to 3 simultaneous centrals
 //     (e.g. iPhone + Apple Watch connected concurrently)
 //
-// Proven Nautique Surf Select 3.0 CAN protocol (aligned with surf-select-s3.ino):
+// Proven Nautique Surf Select 3.0 CAN protocol (aligned with isurfselect-s3.ino):
 //   - 0x14EF4C11 (6 bytes, 4 Hz, LINC 0x11 -> Surf Select 0x4C): authoritative boat state
 //   - 0x14EF114C (8 bytes, ~1 Hz, Surf Select 0x4C -> LINC 0x11): Surf Select commands & heartbeat
 //   - 0x19FE0A05: stereo song title ASCII fragments (bytes[1..], 400 ms join window)
@@ -47,7 +47,7 @@ static const uint32_t FORCE_NOTIFY_DELAY_MS = 800;
 static const uint32_t SONG_JOIN_MS = 400;
 static const uint32_t CAN_HEALTH_INTERVAL_MS = 500;
 
-static const char *DEVICE_NAME = "Surf Select";
+static const char *DEVICE_NAME = "iSurfSelect";
 static const char *SERVICE_UUID = "7c4e0001-6f3b-4a1e-9c55-1b2d3e4f5061";
 static const char *STATE_UUID = "7c4e0002-6f3b-4a1e-9c55-1b2d3e4f5061";
 static const char *COMMAND_UUID = "7c4e0003-6f3b-4a1e-9c55-1b2d3e4f5061";
@@ -871,7 +871,7 @@ static void startBle() {
   advertising->addServiceUUID(SERVICE_UUID);
   advertising->setScanResponse(true);
   advertising->start();
-  Serial.println("BLE advertising as Surf Select");
+  Serial.println("BLE advertising as iSurfSelect");
 }
 
 static void handleLine(char *line) {
@@ -971,7 +971,7 @@ static void handleLine(char *line) {
 void setup() {
   Serial.begin(115200);
   delay(200);
-  Serial.println("Surf Select 3.0 Bridge (ESP32)");
+  Serial.println("iSurfSelect bridge (ESP32)");
   startBle();
   xTaskCreatePinnedToCore(canTask, "can", 8192, nullptr, 5, nullptr, 0);
 }

@@ -4,6 +4,7 @@ DerivedData
 xcuserdata
 *.xcuserstate
 .canvenv
+.swiftpm
 firmware/**/build/
 tools/**/__pycache__/
 *.pyc

@@ -2,7 +2,7 @@ import AppIntents
 import Foundation
 
 extension Notification.Name {
-    static let surfActionButton = Notification.Name("surf-select.action-button")
+    static let surfActionButton = Notification.Name("isurfselect.action-button")
 }
 
 enum ActionButtonBridge {
@@ -27,7 +27,7 @@ enum ActionButtonBridge {
 
 struct AdvanceSurfControlIntent: AppIntent {
     static var title: LocalizedStringResource = "Next Surf Control"
-    static var description = IntentDescription("Moves Surf Select to the next control, or sends a speed or ballast change that is waiting.")
+    static var description = IntentDescription("Moves iSurfSelect to the next control, or sends a speed or ballast change that is waiting.")
     static var openAppWhenRun = true
 
     func perform() async throws -> some IntentResult {
@@ -41,7 +41,7 @@ extension AdvanceSurfControlIntent {
     static var supportedModes: IntentModes { .foreground(.immediate) }
 }
 
-struct SurfSelectShortcuts: AppShortcutsProvider {
+struct ISurfSelectShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: AdvanceSurfControlIntent(),

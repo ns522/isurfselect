@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct SurfSelectPhoneApp: App {
+struct ISurfSelectPhoneApp: App {
     var body: some Scene {
         WindowGroup {
             BoatControlScreen()

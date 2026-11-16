@@ -1,7 +1,7 @@
 import Combine
 import CoreMotion
 import HealthKit
-import SurfSelectCore
+import ISurfSelectCore
 import WatchKit
 
 /// Follows the watch's own water lock. On a watch with a depth sensor, submersion turns that lock on.
@@ -95,7 +95,7 @@ final class BoatSession: NSObject, ObservableObject {
     private var lockWhenWorkoutRuns = false
     private var polling = false
 
-    /// Keeps Surf Select on screen and turns on Water Lock from inside the app.
+    /// Keeps iSurfSelect on screen and turns on Water Lock from inside the app.
     private func beginWaterSession() {
         guard runtime?.state != .running, runtime?.state != .scheduled else { return }
         let session = WKExtendedRuntimeSession()

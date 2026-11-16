@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import SurfSelectCore
+@testable import ISurfSelectCore
 
 struct CrownControllerTests {
     private let start = Date(timeIntervalSinceReferenceDate: 0)

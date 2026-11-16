@@ -1,7 +1,7 @@
 import CoreBluetooth
 import Foundation
 import Testing
-@testable import SurfSelectCore
+@testable import ISurfSelectCore
 
 struct SurfFrameTests {
     private let template = Data([0x45, 0x00, 0x79, 0x00, 0x07, 0x0A])
@@ -199,7 +199,7 @@ struct SurfFrameTests {
     }
 
     @Test func bluetoothIdentifiers() {
-        #expect(BoatBluetooth.localName == "Surf Select")
+        #expect(BoatBluetooth.localName == "iSurfSelect")
         #expect(BoatBluetooth.serviceUUID == CBUUID(string: "7c4e0001-6f3b-4a1e-9c55-1b2d3e4f5061"))
         #expect(BoatBluetooth.frameUUID == CBUUID(string: "7c4e0002-6f3b-4a1e-9c55-1b2d3e4f5061"))
         #expect(BoatBluetooth.commandUUID == CBUUID(string: "7c4e0003-6f3b-4a1e-9c55-1b2d3e4f5061"))

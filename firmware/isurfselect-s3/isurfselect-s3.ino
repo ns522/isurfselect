@@ -1,9 +1,9 @@
-// Surf Select 3.0 CAN-to-BLE bridge for the Waveshare ESP32-S3-RS485-CAN.
+// isurfselect CAN-to-BLE bridge for the Waveshare ESP32-S3-RS485-CAN.
 //
 // Hardware:
 //   - CAN 250 kbit/s (29-bit extended) on GPIO15 (TX) and GPIO16 (RX)
 //   - RS485 DE on GPIO21 held LOW
-//   - NimBLE peripheral ("Surf Select") supporting up to 4 simultaneous centrals
+//   - NimBLE peripheral ("iSurfSelect") supporting up to 4 simultaneous centrals
 //     (e.g. iPhone + Apple Watch connected concurrently)
 //
 // Proven Nautique Surf Select 3.0 CAN protocol:
@@ -842,7 +842,7 @@ static void canTask(void *) {
 }
 
 static void startBle() {
-  NimBLEDevice::init("Surf Select");
+  NimBLEDevice::init("iSurfSelect");
   NimBLEDevice::setPower(ESP_PWR_LVL_P9);
   NimBLEDevice::setMTU(185);
   NimBLEDevice::setSecurityAuth(false, false, false);
@@ -862,7 +862,7 @@ static void startBle() {
 
   NimBLEAdvertising *adv = NimBLEDevice::getAdvertising();
   adv->addServiceUUID(SERVICE_UUID);
-  adv->setName("Surf Select");
+  adv->setName("iSurfSelect");
   adv->setMinInterval(160);
   adv->setMaxInterval(240);
   adv->start();
@@ -968,7 +968,7 @@ void setup() {
   digitalWrite(RS485_DE, LOW);
   Serial.begin(115200);
   delay(200);
-  Serial.println("Surf Select 3.0 Bridge (ESP32-S3)");
+  Serial.println("iSurfSelect bridge (ESP32-S3)");
   startBle();
   xTaskCreatePinnedToCore(canTask, "can", 8192, nullptr, 5, nullptr, 0);
 }

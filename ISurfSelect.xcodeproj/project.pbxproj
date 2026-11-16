@@ -7,18 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A10000000000000000000012 /* SurfSelectCore in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000011 /* SurfSelectCore */; };
-		A10000000000000000000019 /* SurfSelectCore in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000001A /* SurfSelectCore */; };
+		A10000000000000000000012 /* ISurfSelectCore in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000011 /* ISurfSelectCore */; };
+		A10000000000000000000019 /* ISurfSelectCore in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000001A /* ISurfSelectCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A10000000000000000000001 /* Surf Select.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Surf Select.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		A10000000000000000000013 /* Surf Select iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Surf Select iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000001 /* iSurfSelect.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iSurfSelect.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000013 /* iSurfSelect iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iSurfSelect iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A10000000000000000000002 /* SurfSelect Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "SurfSelect Watch App"; sourceTree = "<group>"; };
-		A10000000000000000000014 /* SurfSelect iOS */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "SurfSelect iOS"; sourceTree = "<group>"; };
+		A10000000000000000000002 /* ISurfSelect Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "ISurfSelect Watch App"; sourceTree = "<group>"; };
+		A10000000000000000000014 /* ISurfSelect iOS */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "ISurfSelect iOS"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -26,7 +26,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000000000000000000012 /* SurfSelectCore in Frameworks */,
+				A10000000000000000000012 /* ISurfSelectCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -34,7 +34,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000000000000000000019 /* SurfSelectCore in Frameworks */,
+				A10000000000000000000019 /* ISurfSelectCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -44,8 +44,8 @@
 		A10000000000000000000004 = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000002 /* SurfSelect Watch App */,
-				A10000000000000000000014 /* SurfSelect iOS */,
+				A10000000000000000000002 /* ISurfSelect Watch App */,
+				A10000000000000000000014 /* ISurfSelect iOS */,
 				A10000000000000000000005 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -53,8 +53,8 @@
 		A10000000000000000000005 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000001 /* Surf Select.app */,
-				A10000000000000000000013 /* Surf Select iOS.app */,
+				A10000000000000000000001 /* iSurfSelect.app */,
+				A10000000000000000000013 /* iSurfSelect iOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -62,9 +62,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A10000000000000000000006 /* Surf Select */ = {
+		A10000000000000000000006 /* iSurfSelect */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A1000000000000000000000A /* Build configuration list for PBXNativeTarget "Surf Select" */;
+			buildConfigurationList = A1000000000000000000000A /* Build configuration list for PBXNativeTarget "iSurfSelect" */;
 			buildPhases = (
 				A10000000000000000000007 /* Sources */,
 				A10000000000000000000003 /* Frameworks */,
@@ -75,19 +75,19 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A10000000000000000000002 /* SurfSelect Watch App */,
+				A10000000000000000000002 /* ISurfSelect Watch App */,
 			);
-			name = "Surf Select";
+			name = "iSurfSelect";
 			packageProductDependencies = (
-				A10000000000000000000011 /* SurfSelectCore */,
+				A10000000000000000000011 /* ISurfSelectCore */,
 			);
-			productName = "Surf Select";
-			productReference = A10000000000000000000001 /* Surf Select.app */;
+			productName = "iSurfSelect";
+			productReference = A10000000000000000000001 /* iSurfSelect.app */;
 			productType = "com.apple.product-type.application";
 		};
-		A10000000000000000000018 /* Surf Select iOS */ = {
+		A10000000000000000000018 /* iSurfSelect iOS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A1000000000000000000001D /* Build configuration list for PBXNativeTarget "Surf Select iOS" */;
+			buildConfigurationList = A1000000000000000000001D /* Build configuration list for PBXNativeTarget "iSurfSelect iOS" */;
 			buildPhases = (
 				A10000000000000000000016 /* Sources */,
 				A10000000000000000000015 /* Frameworks */,
@@ -98,14 +98,14 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A10000000000000000000014 /* SurfSelect iOS */,
+				A10000000000000000000014 /* ISurfSelect iOS */,
 			);
-			name = "Surf Select iOS";
+			name = "iSurfSelect iOS";
 			packageProductDependencies = (
-				A1000000000000000000001A /* SurfSelectCore */,
+				A1000000000000000000001A /* ISurfSelectCore */,
 			);
-			productName = "Surf Select iOS";
-			productReference = A10000000000000000000013 /* Surf Select iOS.app */;
+			productName = "iSurfSelect iOS";
+			productReference = A10000000000000000000013 /* iSurfSelect iOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -117,7 +117,7 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastUpgradeCheck = 2720;
 			};
-			buildConfigurationList = A1000000000000000000000B /* Build configuration list for PBXProject "SurfSelect" */;
+			buildConfigurationList = A1000000000000000000000B /* Build configuration list for PBXProject "ISurfSelect" */;
 			compatibilityVersion = "Xcode 16.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -134,8 +134,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A10000000000000000000006 /* Surf Select */,
-				A10000000000000000000018 /* Surf Select iOS */,
+				A10000000000000000000006 /* iSurfSelect */,
+				A10000000000000000000018 /* iSurfSelect iOS */,
 			);
 		};
 /* End PBXProject section */
@@ -179,18 +179,18 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_ENTITLEMENTS = SurfSelect.entitlements;
+				CODE_SIGN_ENTITLEMENTS = ISurfSelect.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = XU5CPTM69G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WatchInfo.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Surf Select";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Surf Select connects to the ESP32 on the boat to send surf commands.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Surf Select starts a surfing session so the watch can lock its screen in the water.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Surf Select starts a surfing session so the watch can lock its screen in the water.";
-				INFOPLIST_KEY_NSMotionUsageDescription = "Surf Select uses the water sensor to switch to crown controls when the watch is submerged.";
+				INFOPLIST_KEY_CFBundleDisplayName = "iSurfSelect";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "iSurfSelect connects to the ESP32 on the boat to send surf commands.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "iSurfSelect starts a surfing session so the watch can lock its screen in the water.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "iSurfSelect starts a surfing session so the watch can lock its screen in the water.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "iSurfSelect uses the water sensor to switch to crown controls when the watch is submerged.";
 				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKWatchOnly = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -198,7 +198,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nicksisco.surfselect;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nicksisco.isurfselect;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -213,18 +213,18 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = YES;
-				CODE_SIGN_ENTITLEMENTS = SurfSelect.entitlements;
+				CODE_SIGN_ENTITLEMENTS = ISurfSelect.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = XU5CPTM69G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WatchInfo.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Surf Select";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Surf Select connects to the ESP32 on the boat to send surf commands.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Surf Select starts a surfing session so the watch can lock its screen in the water.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Surf Select starts a surfing session so the watch can lock its screen in the water.";
-				INFOPLIST_KEY_NSMotionUsageDescription = "Surf Select uses the water sensor to switch to crown controls when the watch is submerged.";
+				INFOPLIST_KEY_CFBundleDisplayName = "iSurfSelect";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "iSurfSelect connects to the ESP32 on the boat to send surf commands.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "iSurfSelect starts a surfing session so the watch can lock its screen in the water.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "iSurfSelect starts a surfing session so the watch can lock its screen in the water.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "iSurfSelect uses the water sensor to switch to crown controls when the watch is submerged.";
 				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKWatchOnly = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -232,7 +232,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nicksisco.surfselect;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nicksisco.isurfselect;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -339,8 +339,8 @@
 				DEVELOPMENT_TEAM = XU5CPTM69G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Surf Select";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Surf Select connects to the ESP32 on the boat to send surf commands.";
+				INFOPLIST_KEY_CFBundleDisplayName = "iSurfSelect";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "iSurfSelect connects to the ESP32 on the boat to send surf commands.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -350,7 +350,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nicksisco.surfselect.phone;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nicksisco.isurfselect.phone;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -368,8 +368,8 @@
 				DEVELOPMENT_TEAM = XU5CPTM69G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Surf Select";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Surf Select connects to the ESP32 on the boat to send surf commands.";
+				INFOPLIST_KEY_CFBundleDisplayName = "iSurfSelect";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "iSurfSelect connects to the ESP32 on the boat to send surf commands.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -379,7 +379,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nicksisco.surfselect.phone;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nicksisco.isurfselect.phone;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -392,7 +392,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A1000000000000000000000A /* Build configuration list for PBXNativeTarget "Surf Select" */ = {
+		A1000000000000000000000A /* Build configuration list for PBXNativeTarget "iSurfSelect" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000000000000000000000C /* Debug */,
@@ -401,7 +401,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A1000000000000000000000B /* Build configuration list for PBXProject "SurfSelect" */ = {
+		A1000000000000000000000B /* Build configuration list for PBXProject "ISurfSelect" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000000000000000000000E /* Debug */,
@@ -410,7 +410,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A1000000000000000000001D /* Build configuration list for PBXNativeTarget "Surf Select iOS" */ = {
+		A1000000000000000000001D /* Build configuration list for PBXNativeTarget "iSurfSelect iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000000000000000000001B /* Debug */,
@@ -429,15 +429,15 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		A10000000000000000000011 /* SurfSelectCore */ = {
+		A10000000000000000000011 /* ISurfSelectCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A10000000000000000000010 /* XCLocalSwiftPackageReference "." */;
-			productName = SurfSelectCore;
+			productName = ISurfSelectCore;
 		};
-		A1000000000000000000001A /* SurfSelectCore */ = {
+		A1000000000000000000001A /* ISurfSelectCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A10000000000000000000010 /* XCLocalSwiftPackageReference "." */;
-			productName = SurfSelectCore;
+			productName = ISurfSelectCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

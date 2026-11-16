@@ -10,7 +10,7 @@ public enum BoatLinkStatus: Equatable, Sendable {
 
 public enum BoatBluetooth {
     /// Advertised name of the Waveshare ESP32-S3 bridge.
-    public static let localName = "Surf Select"
+    public static let localName = "iSurfSelect"
     // CBUUID values are immutable. The class is not Sendable, so these constants opt out of the checker.
     nonisolated(unsafe) public static let serviceUUID = CBUUID(string: "7c4e0001-6f3b-4a1e-9c55-1b2d3e4f5061")
     nonisolated(unsafe) public static let frameUUID = CBUUID(string: "7c4e0002-6f3b-4a1e-9c55-1b2d3e4f5061")

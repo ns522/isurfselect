@@ -1,14 +1,14 @@
-# Surf Select
+# isurfselect
 
 Apple Watch and iPhone control for a Nautique Surf Select 3.0 system (part `200169`).
 
-The boat speaks CAN. The Waveshare ESP32-S3 on that bus is a Bluetooth LE peripheral named `Surf Select`. The Apple Watch and the iPhone both scan for that service and connect as centrals. Neither uses the other as a bridge.
+The boat speaks CAN. The Waveshare ESP32-S3 on that bus is a Bluetooth LE peripheral named `iSurfSelect`. The Apple Watch and the iPhone both scan for that service and connect as centrals. Neither uses the other as a bridge.
 
 ## Bridge
 
 Mount the ESP32-S3 in the starboard rear locker, next to the existing transom antenna. In the boat, the watch and the phone only have to reach the ESP32 over Bluetooth.
 
-The board sketch is `firmware/surf-select-s3/surf-select-s3.ino`. It uses the ESP32 CAN controller (TWAI) and NimBLE. A classic ESP32 build of the same Bluetooth contract is `firmware/esp32/surf_select_bridge/surf_select_bridge.ino`.
+The board sketch is `firmware/isurfselect-s3/isurfselect-s3.ino`. It uses the ESP32 CAN controller (TWAI) and NimBLE. A classic ESP32 build of the same Bluetooth contract is `firmware/esp32/isurfselect_bridge/isurfselect_bridge.ino`.
 
 The ESP32-S3 works both **inline alongside the factory `200169` Surf Select 3.0 module** and **standalone** with `200169` unplugged:
 
@@ -23,7 +23,7 @@ On the Waveshare ESP32-S3-RS485-CAN, TX is GPIO 15 and RX is GPIO 16 (with RS485
 
 The ESP32 is the only peripheral. The watch and the iPhone are both centrals.
 
-Each one scans for the local name `Surf Select` and for this service:
+Each one scans for the local name `iSurfSelect` and for this service:
 
 `7c4e0001-6f3b-4a1e-9c55-1b2d3e4f5061`
 
@@ -103,7 +103,7 @@ Song fragments on `0x19FE0A05` that arrive within `0.4 s` belong to one title. T
 ### Flashing
 
 1. Install the Arduino IDE and Espressif's ESP32 board package (Boards Manager, `esp32` by Espressif Systems).
-2. Open `firmware/surf-select-s3/surf-select-s3.ino` for the Waveshare board, or `firmware/esp32/surf_select_bridge/surf_select_bridge.ino` for a classic ESP32.
+2. Open `firmware/isurfselect-s3/isurfselect-s3.ino` for the Waveshare board, or `firmware/esp32/isurfselect_bridge/isurfselect_bridge.ino` for a classic ESP32.
 3. Select the matching board and its serial port.
 4. Upload.
 
@@ -124,4 +124,4 @@ Small crown motion is ignored. A crown press starts Water Lock unlock and sends 
 
 The fēnix app copy is on the Desktop at `garmin-fenix6-apps` (`C6SK1207.PRG` plus its data files).
 
-The crown behavior lives in `Sources/SurfSelectCore` and is covered by `swift test`. Open `SurfSelect.xcodeproj` to run the watch app. On the boat the screen is touch controls, with Settings at the bottom. Water controls in Settings switches to the crown, and Done on that list returns to the touchscreen. The watch also switches to the crown when Water Lock turns on. A watch with a depth sensor locks itself when it submerges.
+The crown behavior lives in `Sources/ISurfSelectCore` and is covered by `swift test`. Open `ISurfSelect.xcodeproj` to run the watch app. On the boat the screen is touch controls, with Settings at the bottom. Water controls in Settings switches to the crown, and Done on that list returns to the touchscreen. The watch also switches to the crown when Water Lock turns on. A watch with a depth sensor locks itself when it submerges.
