@@ -8,3 +8,7 @@ xcuserdata
 firmware/**/build/
 tools/**/__pycache__/
 *.pyc
+
+# storefront secrets and local Vercel link
+web/.env.local
+web/.vercel

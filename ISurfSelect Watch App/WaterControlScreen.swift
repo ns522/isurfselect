@@ -11,6 +11,7 @@ struct WaterControlScreen: View {
     var connected: Bool
     var onCommand: (BoatCommand) -> Void
     @AppStorage("sideCountdown") private var sideCountdown = true
+    @AppStorage("ballastPounds") private var ballastPounds = 50
     @State private var crown = 0.0
     @State private var now = Date()
     @State private var countdown: Int?
@@ -20,15 +21,15 @@ struct WaterControlScreen: View {
         VStack(spacing: 2) {
             Text(connection)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(controller.phase == .browsing ? (connected ? Color.green : Color.orange) : Color.black)
+                .foregroundStyle(controller.phase == .browsing ? (connected ? Color.green : Color.nautique) : Color.black)
             if controller.phase == .browsing {
-                Text(controller.function.title)
+                Text(controller.currentFunctionTitle)
                     .font(.system(size: 36, weight: .bold, design: .rounded))
                     .minimumScaleFactor(0.6)
                     .foregroundStyle(.white)
                 Text(countdown.map(String.init) ?? controller.valueText)
                     .font(.title3.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(countdown == nil ? Color.secondary : Color.orange)
+                    .foregroundStyle(countdown == nil ? Color.secondary : Color.nautique)
             } else {
                 Text(phaseTitle)
                     .font(.caption2.weight(.semibold))
@@ -92,8 +93,12 @@ struct WaterControlScreen: View {
             }
             controller = next
         }
-        .onAppear { applyExitFlag() }
+        .onAppear {
+            applyExitFlag()
+            syncBallastPounds(ballastPounds)
+        }
         .onChange(of: allowsExit) { _, _ in applyExitFlag() }
+        .onChange(of: ballastPounds) { _, newValue in syncBallastPounds(newValue) }
         .task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(200))
@@ -151,6 +156,15 @@ struct WaterControlScreen: View {
         controller = next
     }
 
+    private func syncBallastPounds(_ pounds: Int) {
+        let snapped = BoatState.snapBallastPounds(pounds)
+        if controller.boat.ballastPounds != snapped {
+            var next = controller
+            next.setBallastPounds(snapped)
+            controller = next
+        }
+    }
+
     private var statusLine: String {
         let remaining = controller.sideCooldownRemaining(at: now)
         if controller.function == .side, controller.phase != .browsing, remaining > 0 {
@@ -164,7 +178,7 @@ struct WaterControlScreen: View {
 
     private var phaseTitle: String {
         switch controller.phase {
-        case .browsing: controller.function.title
+        case .browsing: controller.currentFunctionTitle
         case .armed: "ARMED"
         case .confirming: "CONFIRM"
         }
@@ -173,7 +187,7 @@ struct WaterControlScreen: View {
     private var background: Color {
         switch controller.phase {
         case .browsing: .black
-        case .armed: .orange
+        case .armed: .nautique
         case .confirming: .yellow
         }
     }

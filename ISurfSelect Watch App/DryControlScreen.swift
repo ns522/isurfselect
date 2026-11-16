@@ -9,7 +9,10 @@ struct DryControlScreen: View {
     var connection: String
     var connected: Bool
     var shape: Int
+    var song: String = ""
+    var shifting: Bool = false
     var onCommand: (BoatCommand) -> Void
+    @AppStorage("ballastPounds") private var ballastPounds = 50
     @State private var now = Date()
 
     var body: some View {
@@ -17,7 +20,7 @@ struct DryControlScreen: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text(connection)
                     .font(.headline)
-                    .foregroundStyle(connected ? .green : .orange)
+                    .foregroundStyle(connected ? .green : .nautique)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 summary
 
@@ -54,6 +57,42 @@ struct DryControlScreen: View {
                     }
                 }
 
+                if controller.boat.wakeZoneID != nil {
+                    controlCard(controller.boat.wakeZoneName) {
+                        stepper(value: "\(controller.boat.wakeVolume)", unit: "") { up in
+                            send { $0.changeWakeVolume(up: up, at: Date()) }
+                        }
+                    }
+                }
+
+                controlCard("Music") {
+                    if !song.isEmpty {
+                        Text(song)
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    HStack(spacing: 6) {
+                        Button {
+                            send { $0.skipTrack(next: false, at: Date()) }
+                        } label: {
+                            Image(systemName: "backward.end.fill")
+                                .frame(maxWidth: .infinity, minHeight: 32)
+                        }
+                        .buttonStyle(.bordered)
+                        .accessibilityLabel("Previous track")
+
+                        Button {
+                            send { $0.skipTrack(next: true, at: Date()) }
+                        } label: {
+                            Image(systemName: "forward.end.fill")
+                                .frame(maxWidth: .infinity, minHeight: 32)
+                        }
+                        .buttonStyle(.bordered)
+                        .accessibilityLabel("Next track")
+                    }
+                }
+
                 controlCard("Shape") {
                     stepper(value: "\(shape)", unit: "") { up in
                         send { _ in
@@ -65,10 +104,23 @@ struct DryControlScreen: View {
                 }
 
                 controlCard("Ballast") {
-                    HStack(spacing: 6) {
-                        shift("Port") { send { $0.shiftBallast(port: true, at: Date()) } }
-                        shift("Stbd") { send { $0.shiftBallast(port: false, at: Date()) } }
+                    stepper(value: "\(snappedBallastPounds)", unit: "lb") { up in
+                        let delta = up ? SurfFrame.ballastPoundsStep : -SurfFrame.ballastPoundsStep
+                        let nextPounds = BoatState.snapBallastPounds(snappedBallastPounds + delta)
+                        guard nextPounds != snappedBallastPounds else { return }
+                        ballastPounds = nextPounds
+                        syncBallastPounds(nextPounds)
+                        WKInterfaceDevice.current().play(.click)
                     }
+                    HStack(spacing: 6) {
+                        shift("Port") {
+                            send { $0.shiftBallast(port: true, pounds: snappedBallastPounds, at: Date()) }
+                        }
+                        shift("Stbd") {
+                            send { $0.shiftBallast(port: false, pounds: snappedBallastPounds, at: Date()) }
+                        }
+                    }
+                    stopPumpsButton
                 }
 
                 NavigationLink {
@@ -82,6 +134,12 @@ struct DryControlScreen: View {
             .padding(.horizontal, 2)
         }
         .navigationTitle("Surf")
+        .onAppear {
+            syncBallastPounds(ballastPounds)
+        }
+        .onChange(of: ballastPounds) { _, newValue in
+            syncBallastPounds(newValue)
+        }
         .task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(500))
@@ -117,8 +175,50 @@ struct DryControlScreen: View {
     private func choice(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
             .buttonStyle(.borderedProminent)
-            .tint(selected ? .orange : Color.white.opacity(0.16))
+            .tint(selected ? .nautique : Color.white.opacity(0.16))
             .frame(maxWidth: .infinity)
+    }
+
+    private var snappedBallastPounds: Int {
+        BoatState.snapBallastPounds(ballastPounds)
+    }
+
+    private func syncBallastPounds(_ pounds: Int) {
+        let snapped = BoatState.snapBallastPounds(pounds)
+        if ballastPounds != snapped {
+            ballastPounds = snapped
+        }
+        if controller.boat.ballastPounds != snapped {
+            var next = controller
+            next.setBallastPounds(snapped)
+            controller = next
+        }
+    }
+
+    @ViewBuilder
+    private var stopPumpsButton: some View {
+        let pumpsRunning = shifting || controller.boat.shifting
+        if pumpsRunning {
+            Button {
+                send { $0.stopBallast(at: Date()) }
+            } label: {
+                Text("Stop Pumps")
+                    .font(.caption.weight(.bold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+        } else {
+            Button {
+                send { $0.stopBallast(at: Date()) }
+            } label: {
+                Text("Stop Pumps")
+                    .font(.caption.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(.red)
+        }
     }
 
     private func shift(_ title: String, action: @escaping () -> Void) -> some View {

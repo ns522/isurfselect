@@ -1,0 +1,9 @@
+{
+  "hardware": "esp32s3",
+  "version": "1.0.1",
+  "size": 561216,
+  "crc32": "013c9db4",
+  "sha256": "feb5d49324c1a299ac577baaaf5696633a061ecf44b61b8639f0d17ec5ae33cf",
+  "url": "https://example.com/isurfselect-s3.bin",
+  "notes": "Replace size, crc32, sha256, and url with the exported app bin. Leave sha256 empty to skip that check."
+}

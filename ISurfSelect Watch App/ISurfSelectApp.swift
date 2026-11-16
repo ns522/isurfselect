@@ -5,6 +5,7 @@ import WatchKit
 @main
 struct ISurfSelectApp: App {
     @StateObject private var session = BoatSession()
+    @AppStorage("ballastPounds") private var ballastPounds = 50
 
     var body: some Scene {
         WindowGroup {
@@ -26,10 +27,18 @@ struct ISurfSelectApp: App {
                             connection: session.connectionText,
                             connected: session.status == .ready,
                             shape: session.shape,
+                            song: session.song,
+                            shifting: session.shifting,
                             onCommand: session.handle
                         )
                     }
                 }
+            }
+            .onAppear {
+                session.setBallastPounds(ballastPounds)
+            }
+            .onChange(of: ballastPounds) { _, newValue in
+                session.setBallastPounds(newValue)
             }
             .task {
                 await session.start()

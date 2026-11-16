@@ -116,30 +116,46 @@ struct SurfFrameTests {
         #expect(base.applying(.volume(0)).data[4] == 0)
         #expect(base.applying(.volume(40)).data[4] == 40)
 
-        let starboardShift = base.applying(.ballast(port: false))
+        let starboardShift = base.applying(.ballast(port: false, pounds: 200))
         #expect(starboardShift.shifting)
-        #expect(!starboardShift.port)
+        #expect(starboardShift.port == base.port)
         #expect(!starboardShift.lights)
         #expect(starboardShift.volume == 8)
-        #expect(starboardShift.data == Data([0x4D, 0xF2, 0x79, 0xAB, 0x08, 0x0B]))
+        #expect(starboardShift.data == Data([0x47, 0xF2, 0x79, 0xAB, 0x08, 0x0B]))
 
-        let portShift = base.applying(.ballast(port: true))
+        let portShift = base.applying(.ballast(port: true, pounds: 350))
         #expect(portShift.shifting)
-        #expect(portShift.port)
-        #expect(portShift.data == Data([0x45, 0xF2, 0x79, 0xAB, 0x08, 0x0B]))
+        #expect(portShift.port == base.port)
+        #expect(portShift.data == Data([0x47, 0xF2, 0x79, 0xAB, 0x08, 0x0B]))
 
+        let starboardBase = base.applying(.side(port: false))
+        let portShiftOnStarboardWave = starboardBase.applying(.ballast(port: true, pounds: 150))
+        #expect(portShiftOnStarboardWave.shifting)
+        #expect(portShiftOnStarboardWave.port == false)
+        #expect(portShiftOnStarboardWave.data == Data([0x4D, 0xF2, 0x79, 0xAB, 0x08, 0x0B]))
+
+        let stopped = portShiftOnStarboardWave.applying(.stopBallast)
+        #expect(!stopped.shifting)
+        #expect(stopped.port == false)
+        #expect(stopped.data == starboardBase.data)
+
+        #expect(base.applying(.track(next: true)) == base)
+        #expect(base.applying(.track(next: false)) == base)
         #expect(base.applying(.leaveWater) == base)
         #expect(portShift.applying(.leaveWater) == portShift)
+        #expect(base.applying(.zoneVolume(id: 4, percent: 60)) == base)
+        #expect(base.applying(.zoneStep(id: 4, up: true)) == base)
+        #expect(base.applying(.refreshZones) == base)
     }
 
-    @Test func boatStateUsesSideSpeedAndVolume() {
+    @Test func boatStateUsesSideSpeedVolumeAndShifting() {
         let frame = SurfFrame(shape: 5, port: false, speedTenths: 122, volume: 5, lights: true, shifting: true)
-        #expect(frame.boatState == BoatState(port: false, speedTenths: 122, volume: 5))
+        #expect(frame.boatState == BoatState(port: false, speedTenths: 122, volume: 5, shifting: true))
         #expect(frame.boatState.speedMph == 12.2)
 
         let decoded = SurfFrame(bytes: Data([0x5D, 0x01, 0x7A, 0x00, 0x05, 0x0B]))
-        #expect(decoded.boatState == BoatState(port: false, speedTenths: 122, volume: 5))
-        #expect(SurfFrame().boatState == BoatState(port: true, speedTenths: 121, volume: 7))
+        #expect(decoded.boatState == BoatState(port: false, speedTenths: 122, volume: 5, shifting: true))
+        #expect(SurfFrame().boatState == BoatState(port: true, speedTenths: 121, volume: 7, shifting: false))
     }
 
     @Test func bluetoothLinkMatchesTheEsp32State() {
@@ -177,10 +193,120 @@ struct SurfFrameTests {
         #expect(SurfFrame.commandData(for: .shape(-3)) == Data([0xA5, 0x04, 0]))
         #expect(SurfFrame.commandData(for: .shape(99)) == Data([0xA5, 0x04, 10]))
 
-        #expect(SurfFrame.commandData(for: .ballast(port: true)) == Data([0xA5, 0x05, 0x09]))
-        #expect(SurfFrame.commandData(for: .ballast(port: false)) == Data([0xA5, 0x05, 0x0A]))
+        #expect(SurfFrame.ballastPoundsRange == 50...400)
+        #expect(SurfFrame.ballastPoundsStep == 50)
+        #expect(SurfFrame.commandData(for: .ballast(port: true)) == Data([0xA5, 0x05, 0x05]))
+        #expect(SurfFrame.commandData(for: .ballast(port: false)) == Data([0xA5, 0x05, 0x06]))
+
+        let expectedBallastTable: [(pounds: Int, portByte: UInt8, stbdByte: UInt8)] = [
+            (50, 0x05, 0x06),
+            (100, 0x09, 0x0A),
+            (150, 0x0D, 0x0E),
+            (200, 0x11, 0x12),
+            (250, 0x15, 0x16),
+            (300, 0x19, 0x1A),
+            (350, 0x1D, 0x1E),
+            (400, 0x21, 0x22),
+        ]
+        for entry in expectedBallastTable {
+            #expect(SurfFrame.ballastCommandByte(port: true, pounds: entry.pounds) == entry.portByte)
+            #expect(SurfFrame.ballastCommandByte(port: false, pounds: entry.pounds) == entry.stbdByte)
+            #expect(SurfFrame.commandData(for: .ballast(port: true, pounds: entry.pounds)) == Data([0xA5, 0x05, entry.portByte]))
+            #expect(SurfFrame.commandData(for: .ballast(port: false, pounds: entry.pounds)) == Data([0xA5, 0x05, entry.stbdByte]))
+        }
+
+        // Clamping and nearest-50 rounding on ballast pounds.
+        #expect(SurfFrame.ballastCommandByte(port: true, pounds: -100) == 0x05)
+        #expect(SurfFrame.ballastCommandByte(port: false, pounds: 0) == 0x06)
+        #expect(SurfFrame.ballastCommandByte(port: true, pounds: 74) == 0x05)
+        #expect(SurfFrame.ballastCommandByte(port: true, pounds: 75) == 0x09)
+        #expect(SurfFrame.ballastCommandByte(port: true, pounds: 999) == 0x21)
+        #expect(SurfFrame.ballastCommandByte(port: false, pounds: 999) == 0x22)
+
+        #expect(StereoZone.level(fromPercent: 20) == 10)
+        #expect(StereoZone.level(fromPercent: 22) == 11)
+        #expect(StereoZone.percent(fromLevel: 10) == 20)
+        #expect(StereoZone.percent(fromLevel: 11) == 22)
+        #expect(StereoZone.percent(fromLevel: 50) == 100)
+        #expect(SurfFrame.commandData(for: .zoneVolume(id: 1, percent: 10)) == Data([0xA5, 0x06, 0x01, 20]))
+        #expect(SurfFrame.commandData(for: .zoneVolume(id: 4, percent: -10)) == Data([0xA5, 0x06, 0x04, 0]))
+        #expect(SurfFrame.commandData(for: .zoneVolume(id: 4, percent: 150)) == Data([0xA5, 0x06, 0x04, 100]))
+
+        #expect(SurfFrame.commandData(for: .zoneStep(id: 4, up: true)) == Data([0xA5, 0x07, 0x04, 0x00]))
+        #expect(SurfFrame.commandData(for: .zoneStep(id: 2, up: false)) == Data([0xA5, 0x07, 0x02, 0x01]))
+
+        #expect(SurfFrame.commandData(for: .refreshZones) == Data([0xA5, 0x08, 0x00]))
+        #expect(SurfFrame.commandData(for: .stopBallast) == Data([0xA5, 0x09, 0x03]))
+        #expect(SurfFrame.commandData(for: .track(next: true)) == Data([0xA5, 0x0A, 0x0B]))
+        #expect(SurfFrame.commandData(for: .track(next: false)) == Data([0xA5, 0x0A, 0x0C]))
 
         #expect(SurfFrame.commandData(for: .leaveWater) == nil)
+    }
+
+    @Test func stereoZonesCodecRoundTripsAndValidates() {
+        #expect(StereoZone.volumeRange == 0...50)
+        #expect(StereoZone.stepSize == 1)
+
+        let zones = [
+            StereoZone(id: 1, name: "Bow", volume: 8, muted: false),
+            StereoZone(id: 2, name: "Dash", volume: 16, muted: true),
+            StereoZone(id: 3, name: "Cockpit", volume: 20, muted: false),
+            StereoZone(id: 4, name: "Wake", volume: 32, muted: false),
+        ]
+
+        let encoded = StereoZone.encodeZones(zones)
+        #expect(encoded[0] == 0x01)
+        #expect(encoded[1] == 4)
+        #expect(StereoZone.decodeZones(encoded) == zones)
+
+        #expect(StereoZone.decodeZones(StereoZone.encodeZones([])) == [])
+
+        // Empty name on the wire falls back to "Zone <id>".
+        let unnamedWire = Data([0x01, 0x01, 0x03, 0x80 | 40, 0x00])
+        #expect(StereoZone.decodeZones(unnamedWire) == [StereoZone(id: 3, name: "Zone 3", volume: 20, muted: true)])
+        #expect(StereoZone(id: 2, name: "", volume: 120).name == "Zone 2")
+        #expect(StereoZone(id: 2, name: "", volume: 120).volume == 50)
+
+        // Malformed or truncated packets return nil.
+        #expect(StereoZone.decodeZones(Data()) == nil)
+        #expect(StereoZone.decodeZones(Data([0x01])) == nil)
+        #expect(StereoZone.decodeZones(Data([0x02, 0x00])) == nil)
+        #expect(StereoZone.decodeZones(Data([0x01, 0x09])) == nil)
+        #expect(StereoZone.decodeZones(Data([0x01, 0x01, 0x01, 50])) == nil)
+        #expect(StereoZone.decodeZones(Data([0x01, 0x01, 0x01, 50, 0x04, 0x42, 0x6F])) == nil)
+        #expect(StereoZone.decodeZones(Data([0x01, 0x00, 0xFF])) == nil)
+    }
+
+    @Test func wakeZonePrefersWakeThenTowerThenLast() {
+        #expect(StereoZone.wakeZone(in: []) == nil)
+
+        let nmeaZones = [
+            StereoZone(id: 1, name: "Bow", volume: 20),
+            StereoZone(id: 2, name: "Dash", volume: 30),
+            StereoZone(id: 3, name: "Cockpit", volume: 40),
+            StereoZone(id: 4, name: "Wake", volume: 70),
+        ]
+        #expect(StereoZone.wakeZone(in: nmeaZones) == StereoZone(id: 4, name: "Wake", volume: 70))
+
+        let wakeBeforeTower = [
+            StereoZone(id: 1, name: "Tower", volume: 55),
+            StereoZone(id: 2, name: "Wake Speakers", volume: 65),
+            StereoZone(id: 3, name: "Subwoofer", volume: 45),
+        ]
+        #expect(StereoZone.wakeZone(in: wakeBeforeTower) == StereoZone(id: 2, name: "Wake Speakers", volume: 65))
+
+        let towerOnly = [
+            StereoZone(id: 1, name: "Bow", volume: 20),
+            StereoZone(id: 2, name: "Tower Speakers", volume: 60),
+            StereoZone(id: 3, name: "Subwoofer", volume: 50),
+        ]
+        #expect(StereoZone.wakeZone(in: towerOnly) == StereoZone(id: 2, name: "Tower Speakers", volume: 60))
+
+        let genericZones = [
+            StereoZone(id: 1, name: "Zone 1", volume: 20),
+            StereoZone(id: 2, name: "Zone 2", volume: 35),
+        ]
+        #expect(StereoZone.wakeZone(in: genericZones) == StereoZone(id: 2, name: "Zone 2", volume: 35))
     }
 
     @MainActor
@@ -204,5 +330,6 @@ struct SurfFrameTests {
         #expect(BoatBluetooth.frameUUID == CBUUID(string: "7c4e0002-6f3b-4a1e-9c55-1b2d3e4f5061"))
         #expect(BoatBluetooth.commandUUID == CBUUID(string: "7c4e0003-6f3b-4a1e-9c55-1b2d3e4f5061"))
         #expect(BoatBluetooth.songUUID == CBUUID(string: "7c4e0004-6f3b-4a1e-9c55-1b2d3e4f5061"))
+        #expect(BoatBluetooth.zonesUUID == CBUUID(string: "7c4e0005-6f3b-4a1e-9c55-1b2d3e4f5061"))
     }
 }

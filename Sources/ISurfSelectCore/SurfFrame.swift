@@ -9,10 +9,19 @@ public struct SurfFrame: Equatable, Sendable {
     public static let length = 6
     /// Bluetooth state and command length used by the ESP32 bridge.
     public static let linkLength = 5
-    /// Magic header byte for explicit 3-byte BLE commands sent to the ESP32 bridge.
+    /// Magic header byte for explicit BLE commands sent to the ESP32 bridge.
     public static let commandMagic: UInt8 = 0xA5
     public static let shapeRange = 0...10
     public static let volumeRange = 0...40
+    public static let ballastPoundsRange = 50...400
+    public static let ballastPoundsStep = 50
+
+    /// Encodes a ballast shift request (`50...400` lbs in `50` lb steps) into the CAN/BLE command byte.
+    public static func ballastCommandByte(port: Bool, pounds: Int) -> UInt8 {
+        let clamped = min(max(pounds, 0), ballastPoundsRange.upperBound)
+        let steps = min(max((clamped + 25) / ballastPoundsStep, 1), 8)
+        return UInt8((steps << 2) | (port ? 0x01 : 0x02))
+    }
 
     /// Captured idle frame: shape 4, port, 12.1 mph, volume 7, lights off, shift idle.
     private static let template: [UInt8] = [0x45, 0x00, 0x79, 0x00, 0x07, 0x0A]
@@ -121,7 +130,7 @@ public struct SurfFrame: Equatable, Sendable {
         lights = bytes[4] & 0x02 != 0
     }
 
-    /// Encodes a boat command as an explicit 3-byte BLE packet (`[0xA5, opcode, value]`).
+    /// Encodes a boat command as an explicit `0xA5`-prefixed BLE packet.
     /// Returns `nil` for local-only UI actions such as `.leaveWater`.
     public static func commandData(for command: BoatCommand) -> Data? {
         switch command {
@@ -133,8 +142,23 @@ public struct SurfFrame: Equatable, Sendable {
             return Data([commandMagic, 0x03, UInt8(clamping: min(max(volume, volumeRange.lowerBound), volumeRange.upperBound))])
         case .shape(let shape):
             return Data([commandMagic, 0x04, UInt8(clamping: min(max(shape, shapeRange.lowerBound), shapeRange.upperBound))])
-        case .ballast(let port):
-            return Data([commandMagic, 0x05, port ? 0x09 : 0x0A])
+        case .ballast(let port, let pounds):
+            return Data([commandMagic, 0x05, ballastCommandByte(port: port, pounds: pounds)])
+        case .zoneVolume(let id, let level):
+            return Data([
+                commandMagic,
+                0x06,
+                UInt8(clamping: id),
+                UInt8(StereoZone.percent(fromLevel: level)),
+            ])
+        case .zoneStep(let id, let up):
+            return Data([commandMagic, 0x07, UInt8(clamping: id), up ? 0x00 : 0x01])
+        case .refreshZones:
+            return Data([commandMagic, 0x08, 0x00])
+        case .stopBallast:
+            return Data([commandMagic, 0x09, 0x03])
+        case .track(let next):
+            return Data([commandMagic, 0x0A, next ? 0x0B : 0x0C])
         case .leaveWater:
             return nil
         }
@@ -153,16 +177,116 @@ public struct SurfFrame: Equatable, Sendable {
             let lower = Self.shapeRange.lowerBound
             let upper = Self.shapeRange.upperBound
             next.shape = min(max(shape, lower), upper)
-        case .ballast(let port):
+        case .ballast:
             next.shifting = true
-            next.port = port
-        case .leaveWater:
+        case .stopBallast:
+            next.shifting = false
+        case .track, .zoneVolume, .zoneStep, .refreshZones, .leaveWater:
             break
         }
         return next
     }
 
     public var boatState: BoatState {
-        BoatState(port: port, speedTenths: speedTenths, volume: volume)
+        BoatState(port: port, speedTenths: speedTenths, volume: volume, shifting: shifting)
+    }
+}
+
+/// Stereo zone discovered dynamically over NMEA 2000 (`PGN 130574` / JL Audio MediaMaster).
+/// `volume` is the LINC 0–50 level. The bus still carries 0–100 percent.
+public struct StereoZone: Equatable, Identifiable, Sendable {
+    public static let volumeRange = 0...50
+    public static let stepSize = 1
+    public static let formatVersion: UInt8 = 0x01
+    public static let maxZones = 8
+
+    public var id: Int
+    public var name: String
+    public var volume: Int
+    public var muted: Bool
+
+    public init(id: Int, name: String, volume: Int, muted: Bool = false) {
+        self.id = id
+        let cleaned = name
+            .split(separator: "\0", maxSplits: 1, omittingEmptySubsequences: false)
+            .first
+            .map(String.init)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        self.name = cleaned.isEmpty ? "Zone \(id)" : cleaned
+        self.volume = min(max(volume, Self.volumeRange.lowerBound), Self.volumeRange.upperBound)
+        self.muted = muted
+    }
+
+    /// LINC shows 0–50. One step is 2 percent on the stereo bus.
+    public static func level(fromPercent percent: Int) -> Int {
+        let clamped = min(max(percent, 0), 100)
+        return min(volumeRange.upperBound, (clamped + 1) / 2)
+    }
+
+    /// Converts a LINC 0–50 level into the percent the stereo command expects.
+    public static func percent(fromLevel level: Int) -> Int {
+        let clamped = min(max(level, volumeRange.lowerBound), volumeRange.upperBound)
+        return min(100, clamped * 2)
+    }
+
+    /// Encodes zones into the `BoatBluetooth.zonesUUID` wire format.
+    public static func encodeZones(_ zones: [StereoZone]) -> Data {
+        let capped = Array(zones.prefix(maxZones))
+        var bytes: [UInt8] = [formatVersion, UInt8(capped.count)]
+        for zone in capped {
+            let zoneId = UInt8(clamping: zone.id)
+            let clampedVol = UInt8(percent(fromLevel: zone.volume))
+            let volByte: UInt8 = (zone.muted ? 0x80 : 0x00) | clampedVol
+            let utf8 = Array(zone.name.utf8.prefix(255))
+            bytes.append(zoneId)
+            bytes.append(volByte)
+            bytes.append(UInt8(utf8.count))
+            bytes.append(contentsOf: utf8)
+        }
+        return Data(bytes)
+    }
+
+    /// Decodes zones from the `BoatBluetooth.zonesUUID` wire format, returning `nil` if malformed or truncated.
+    public static func decodeZones(_ data: Data) -> [StereoZone]? {
+        guard data.count >= 2 else { return nil }
+        let bytes = [UInt8](data)
+        guard bytes[0] == formatVersion else { return nil }
+        let count = Int(bytes[1])
+        guard count <= maxZones else { return nil }
+
+        var index = 2
+        var zones: [StereoZone] = []
+        zones.reserveCapacity(count)
+
+        for _ in 0..<count {
+            guard index + 3 <= bytes.count else { return nil }
+            let zoneId = Int(bytes[index])
+            let volByte = bytes[index + 1]
+            let nameLen = Int(bytes[index + 2])
+            index += 3
+
+            guard index + nameLen <= bytes.count else { return nil }
+            let nameSlice = bytes[index..<(index + nameLen)]
+            index += nameLen
+
+            guard let rawName = String(bytes: nameSlice, encoding: .utf8) else { return nil }
+            let muted = (volByte & 0x80) != 0
+            let volume = level(fromPercent: Int(volByte & 0x7F))
+            zones.append(StereoZone(id: zoneId, name: rawName, volume: volume, muted: muted))
+        }
+
+        guard index == bytes.count else { return nil }
+        return zones
+    }
+
+    /// Picks the wake/tower speaker zone for quick rider control on Apple Watch.
+    public static func wakeZone(in zones: [StereoZone]) -> StereoZone? {
+        if let wake = zones.first(where: { $0.name.localizedCaseInsensitiveContains("wake") }) {
+            return wake
+        }
+        if let tower = zones.first(where: { $0.name.localizedCaseInsensitiveContains("tower") }) {
+            return tower
+        }
+        return zones.last
     }
 }

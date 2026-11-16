@@ -21,7 +21,7 @@ struct CrownControllerTests {
         _ = controller.rotate(up: true, at: start.addingTimeInterval(0.1))
         #expect(controller.function == .side)
 
-        for step in 0..<4 {
+        for step in 0..<6 {
             _ = controller.rotate(up: false, at: start.addingTimeInterval(0.2 + Double(step) * 0.05))
         }
         #expect(controller.function == .ballast)
@@ -273,11 +273,19 @@ struct CrownControllerTests {
         let speed = controller.changeSpeed(up: true, at: start.addingTimeInterval(2))
         let volume = controller.changeVolume(up: false, at: start.addingTimeInterval(2))
         let ballast = controller.shiftBallast(port: true, at: start.addingTimeInterval(2))
+        #expect(controller.boat.shifting == true)
+        let stop = controller.stopBallast(at: start.addingTimeInterval(2.1))
+        #expect(controller.boat.shifting == false)
+        let nextTrack = controller.skipTrack(next: true, at: start.addingTimeInterval(2.2))
+        let prevTrack = controller.skipTrack(next: false, at: start.addingTimeInterval(2.3))
 
         #expect(side == .side(port: false))
         #expect(speed == .speed(tenths: 111))
         #expect(volume == .volume(7))
-        #expect(ballast == .ballast(port: true))
+        #expect(ballast == .ballast(port: true, pounds: 50))
+        #expect(stop == .stopBallast)
+        #expect(nextTrack == .track(next: true))
+        #expect(prevTrack == .track(next: false))
         #expect(controller.phase == .browsing)
     }
 
@@ -307,12 +315,180 @@ struct CrownControllerTests {
 
     @Test func ballastSendsPortOrStarboardOnTheConfirmingClick() {
         var controller = armed(at: .ballast)
+        #expect(controller.valueText == "50")
+        #expect(controller.unitText == "LB")
+
         _ = controller.rotate(up: false, at: start.addingTimeInterval(10.2))
+        #expect(controller.valueText == "PORT")
+        #expect(controller.unitText == "50 LB")
 
         let command = controller.rotate(up: false, at: start.addingTimeInterval(10.4))
 
-        #expect(command == .ballast(port: true))
+        #expect(command == .ballast(port: true, pounds: 50))
+        #expect(controller.boat.shifting == true)
         #expect(controller.phase == .armed)
+    }
+
+    @Test func ballastPoundsPersistAcrossAdoptBoatAndConfirmConfiguredWeight() {
+        var controller = CrownController(now: start)
+        controller.setBallastPounds(-20)
+        #expect(controller.boat.ballastPounds == 50)
+        controller.setBallastPounds(130)
+        #expect(controller.boat.ballastPounds == 150)
+        controller.setBallastPounds(999)
+        #expect(controller.boat.ballastPounds == 400)
+        controller.setBallastPounds(250)
+        #expect(controller.boat.ballastPounds == 250)
+
+        // Incoming 0x14EF4C11 frames do not overwrite the user's chosen ballast increment.
+        controller.adoptBoat(BoatState(port: false, speedTenths: 120, volume: 10, shifting: false))
+        #expect(controller.boat.ballastPounds == 250)
+        #expect(controller.boat.port == false)
+
+        // Navigate to .ballast and arm it.
+        for step in 0..<4 {
+            _ = controller.rotate(up: false, at: start.addingTimeInterval(Double(step + 1) * 0.05))
+        }
+        #expect(controller.function == .ballast)
+        #expect(controller.valueText == "250")
+        controller.settle(at: start.addingTimeInterval(10))
+        #expect(controller.phase == .armed)
+        #expect(controller.valueText == "250")
+        #expect(controller.unitText == "LB")
+
+        // Turn up for Starboard 250 lb, then confirm.
+        #expect(controller.rotate(up: true, at: start.addingTimeInterval(10.2)) == nil)
+        #expect(controller.phase == .confirming)
+        #expect(controller.valueText == "STBD")
+        #expect(controller.unitText == "250 LB")
+
+        let confirmed = controller.rotate(up: true, at: start.addingTimeInterval(10.4))
+        #expect(confirmed == .ballast(port: false, pounds: 250))
+        #expect(controller.boat.shifting == true)
+        #expect(controller.phase == .armed)
+    }
+
+    @Test func ballastStopsPumpsOnSingleTurnOrSpinWhenShifting() {
+        var controller = armed(at: .ballast, boat: BoatState(shifting: true, ballastPounds: 200))
+        #expect(controller.valueText == "STOP")
+        #expect(controller.unitText == "PUMPS")
+        #expect(controller.hint == "Turn to stop")
+
+        // Single armed turn UP stops pumps immediately without entering .confirming.
+        let stopUp = controller.rotate(up: true, at: start.addingTimeInterval(10.2))
+        #expect(stopUp == .stopBallast)
+        #expect(controller.boat.shifting == false)
+        #expect(controller.phase == .armed)
+        #expect(controller.pendingDirection == nil)
+        #expect(controller.valueText == "200")
+        #expect(controller.unitText == "LB")
+
+        // Single armed turn DOWN also stops pumps immediately when shifting.
+        var downController = armed(at: .ballast, boat: BoatState(shifting: true, ballastPounds: 350))
+        let stopDown = downController.rotate(up: false, at: start.addingTimeInterval(10.2))
+        #expect(stopDown == .stopBallast)
+        #expect(downController.boat.shifting == false)
+        #expect(downController.phase == .armed)
+
+        // Spin gesture on .ballast while shifting also stops pumps immediately.
+        var spinController = armed(at: .ballast, boat: BoatState(shifting: true, ballastPounds: 150))
+        spinController.spin(up: false, detents: 3, at: start.addingTimeInterval(11))
+        #expect(spinController.finishSpin(at: start.addingTimeInterval(11.2)) == .stopBallast)
+        #expect(spinController.boat.shifting == false)
+    }
+
+    @Test func trackRowSkipsNextAndPreviousImmediatelyWithoutConfirm() {
+        var controller = armed(at: .track)
+        #expect(controller.function == .track)
+        #expect(controller.currentFunctionTitle == "Track")
+        #expect(controller.function.needsConfirm == false)
+        #expect(controller.valueText == "SKIP")
+        #expect(controller.unitText == "NEXT / PREV")
+
+        let nextCmd = controller.rotate(up: true, at: start.addingTimeInterval(10.2))
+        #expect(nextCmd == .track(next: true))
+        #expect(controller.phase == .armed)
+
+        let prevCmd = controller.rotate(up: false, at: start.addingTimeInterval(10.4))
+        #expect(prevCmd == .track(next: false))
+        #expect(controller.phase == .armed)
+
+        // Spin gesture on .track also skips tracks in both directions.
+        controller.spin(up: true, detents: 3, at: start.addingTimeInterval(11))
+        #expect(controller.finishSpin(at: start.addingTimeInterval(11.2)) == .track(next: true))
+        controller.spin(up: false, detents: 3, at: start.addingTimeInterval(12))
+        #expect(controller.finishSpin(at: start.addingTimeInterval(12.2)) == .track(next: false))
+    }
+
+    @Test func wakeRowIsHiddenWithoutWakeZoneAndAppearsAfterVolumeWithCustomTitle() {
+        var controller = CrownController(now: start)
+        #expect(controller.menu == [.side, .speed, .volume, .track, .ballast])
+        controller.setAllowsExit(true, at: start)
+        #expect(controller.menu == [.side, .speed, .volume, .track, .ballast, .onBoat])
+        controller.setAllowsExit(false, at: start)
+
+        controller.adoptBoat(BoatState(wakeZoneID: 4, wakeZoneName: "Wake", wakeVolume: 18))
+        #expect(controller.menu == [.side, .speed, .volume, .wake, .track, .ballast])
+
+        // Navigate side -> speed -> volume -> wake
+        _ = controller.rotate(up: false, at: start.addingTimeInterval(0.1))
+        _ = controller.rotate(up: false, at: start.addingTimeInterval(0.2))
+        _ = controller.rotate(up: false, at: start.addingTimeInterval(0.3))
+        #expect(controller.function == .wake)
+        #expect(controller.currentFunctionTitle == "Wake")
+        #expect(controller.valueText == "18")
+        #expect(controller.unitText == "VOL")
+
+        // Dynamic zone name ("Tower") updates the displayed title.
+        controller.adoptBoat(BoatState(wakeZoneID: 2, wakeZoneName: "Tower", wakeVolume: 24))
+        #expect(controller.currentFunctionTitle == "Tower")
+        #expect(controller.valueText == "24")
+
+        // Losing the wake zone while on .wake falls back cleanly to .volume.
+        controller.adoptBoat(BoatState())
+        #expect(controller.function == .volume)
+        #expect(controller.menu == [.side, .speed, .volume, .track, .ballast])
+    }
+
+    @Test func wakeEmitsZoneStepOnCrownAndDryAdjustment() {
+        let wakeBoat = BoatState(wakeZoneID: 4, wakeZoneName: "Tower", wakeVolume: 20)
+        var controller = armed(at: .wake, boat: wakeBoat)
+        #expect(controller.function == .wake)
+        #expect(controller.phase == .armed)
+        #expect(controller.currentFunctionTitle == "Tower")
+
+        // Crown rotation sends .zoneStep immediately without confirmation.
+        let upCmd = controller.rotate(up: true, at: start.addingTimeInterval(10.2))
+        #expect(upCmd == .zoneStep(id: 4, up: true))
+        #expect(controller.boat.wakeVolume == 21)
+        #expect(controller.phase == .armed)
+
+        let downCmd = controller.rotate(up: false, at: start.addingTimeInterval(10.4))
+        #expect(downCmd == .zoneStep(id: 4, up: false))
+        #expect(controller.boat.wakeVolume == 20)
+
+        // Dry control steps by 1 on the 0–50 scale, clamps at the ends, and returns to browsing.
+        controller.adoptBoat(BoatState(wakeZoneID: 4, wakeZoneName: "Wake", wakeVolume: 49))
+        #expect(controller.changeWakeVolume(up: true, at: start.addingTimeInterval(11)) == .zoneStep(id: 4, up: true))
+        #expect(controller.boat.wakeVolume == 50)
+        #expect(controller.phase == .browsing)
+        #expect(controller.changeWakeVolume(up: true, at: start.addingTimeInterval(11.2)) == .zoneStep(id: 4, up: true))
+        #expect(controller.boat.wakeVolume == 50)
+
+        controller.adoptBoat(BoatState(wakeZoneID: 4, wakeZoneName: "Wake", wakeVolume: 1))
+        #expect(controller.changeWakeVolume(up: false, at: start.addingTimeInterval(12)) == .zoneStep(id: 4, up: false))
+        #expect(controller.boat.wakeVolume == 0)
+        #expect(controller.changeWakeVolume(up: false, at: start.addingTimeInterval(12.2)) == .zoneStep(id: 4, up: false))
+        #expect(controller.boat.wakeVolume == 0)
+
+        // Spin gesture on .wake also emits .zoneStep.
+        controller.spin(up: true, detents: 3, at: start.addingTimeInterval(13))
+        #expect(controller.finishSpin(at: start.addingTimeInterval(13.2)) == .zoneStep(id: 4, up: true))
+        #expect(controller.boat.wakeVolume == 1)
+
+        // Without a wakeZoneID, dry wake control does nothing.
+        var noWake = CrownController(now: start)
+        #expect(noWake.changeWakeVolume(up: true, at: start.addingTimeInterval(1)) == nil)
     }
 
     private func armed(
@@ -320,7 +496,8 @@ struct CrownControllerTests {
         boat: BoatState = BoatState()
     ) -> CrownController {
         var controller = CrownController(now: start, boat: boat)
-        for step in 0..<function.rawValue {
+        let targetIndex = controller.menu.firstIndex(of: function) ?? function.rawValue
+        for step in 0..<targetIndex {
             _ = controller.rotate(up: false, at: start.addingTimeInterval(Double(step) * 0.05))
         }
         controller.settle(at: start.addingTimeInterval(10))

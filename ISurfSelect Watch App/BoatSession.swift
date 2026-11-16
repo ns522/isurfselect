@@ -12,6 +12,8 @@ final class BoatSession: NSObject, ObservableObject {
     @Published var controller = CrownController(now: Date())
     @Published private(set) var status: BoatLinkStatus = .off
     @Published private(set) var shape = 4
+    @Published private(set) var song = ""
+    @Published private(set) var shifting = false
 
     let central = BoatCentral()
     private var subscriptions = Set<AnyCancellable>()
@@ -36,19 +38,40 @@ final class BoatSession: NSObject, ObservableObject {
 
     override init() {
         super.init()
+        if let stored = UserDefaults.standard.object(forKey: "ballastPounds") as? Int {
+            controller.setBallastPounds(stored)
+        }
         central.$status.assign(to: &$status)
+        central.$song.assign(to: &$song)
         central.$frame
+            .map(\.shifting)
+            .removeDuplicates()
+            .assign(to: &$shifting)
+        Publishers.CombineLatest(central.$frame, central.$zones)
             .dropFirst()
-            .sink { [weak self] frame in
-                self?.adopt(frame)
+            .sink { [weak self] frame, zones in
+                self?.adopt(frame: frame, zones: zones)
             }
             .store(in: &subscriptions)
     }
 
-    private func adopt(_ frame: SurfFrame) {
-        shape = frame.shape
+    func setBallastPounds(_ pounds: Int) {
         var next = controller
-        next.adoptBoat(frame.boatState)
+        next.setBallastPounds(pounds)
+        guard next != controller else { return }
+        controller = next
+    }
+
+    private func adopt(frame: SurfFrame, zones: [StereoZone]) {
+        shape = frame.shape
+        var state = frame.boatState
+        if let wake = StereoZone.wakeZone(in: zones) {
+            state.wakeZoneID = wake.id
+            state.wakeZoneName = wake.name
+            state.wakeVolume = wake.volume
+        }
+        var next = controller
+        next.adoptBoat(state)
         guard next != controller else { return }
         controller = next
     }

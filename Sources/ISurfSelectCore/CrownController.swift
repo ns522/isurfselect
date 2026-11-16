@@ -4,6 +4,8 @@ public enum BoatFunction: Int, CaseIterable, Sendable {
     case side
     case speed
     case volume
+    case wake
+    case track
     case ballast
     case onBoat
 
@@ -12,6 +14,8 @@ public enum BoatFunction: Int, CaseIterable, Sendable {
         case .side: "Side"
         case .speed: "Speed"
         case .volume: "Volume"
+        case .wake: "Wake"
+        case .track: "Track"
         case .ballast: "Ballast"
         case .onBoat: "Done"
         }
@@ -20,7 +24,7 @@ public enum BoatFunction: Int, CaseIterable, Sendable {
     /// Speed and ballast change the boat's attitude. They send on a second click.
     public var needsConfirm: Bool {
         switch self {
-        case .volume, .onBoat: false
+        case .volume, .wake, .track, .onBoat: false
         case .side: true
         case .speed, .ballast: true
         }
@@ -38,11 +42,38 @@ public struct BoatState: Equatable, Sendable {
     /// Speed in tenths of a mile per hour. 110 is 11.0 mph.
     public var speedTenths: Int
     public var volume: Int
+    public var shifting: Bool
+    public var ballastPounds: Int
+    public var wakeZoneID: Int?
+    public var wakeZoneName: String
+    public var wakeVolume: Int
 
-    public init(port: Bool = true, speedTenths: Int = 110, volume: Int = 8) {
+    public init(
+        port: Bool = true,
+        speedTenths: Int = 110,
+        volume: Int = 8,
+        shifting: Bool = false,
+        ballastPounds: Int = 50,
+        wakeZoneID: Int? = nil,
+        wakeZoneName: String = "Wake",
+        wakeVolume: Int = 0
+    ) {
         self.port = port
         self.speedTenths = speedTenths
         self.volume = volume
+        self.shifting = shifting
+        self.ballastPounds = Self.snapBallastPounds(ballastPounds)
+        self.wakeZoneID = wakeZoneID
+        self.wakeZoneName = wakeZoneName
+        self.wakeVolume = wakeVolume
+    }
+
+    public static func snapBallastPounds(_ pounds: Int) -> Int {
+        let clamped = min(max(pounds, 0), SurfFrame.ballastPoundsRange.upperBound)
+        return min(
+            max(((clamped + 25) / SurfFrame.ballastPoundsStep) * SurfFrame.ballastPoundsStep, SurfFrame.ballastPoundsRange.lowerBound),
+            SurfFrame.ballastPoundsRange.upperBound
+        )
     }
 
     public var speedMph: Double { Double(speedTenths) / 10 }
@@ -53,7 +84,12 @@ public enum BoatCommand: Equatable, Sendable {
     case speed(tenths: Int)
     case volume(Int)
     case shape(Int)
-    case ballast(port: Bool)
+    case ballast(port: Bool, pounds: Int = 50)
+    case stopBallast
+    case track(next: Bool)
+    case zoneVolume(id: Int, percent: Int)
+    case zoneStep(id: Int, up: Bool)
+    case refreshZones
     case leaveWater
 }
 
@@ -78,7 +114,18 @@ public struct CrownController: Equatable, Sendable {
     public private(set) var sideChangeBlocked = false
 
     public var menu: [BoatFunction] {
-        allowsExit ? BoatFunction.allCases : BoatFunction.allCases.filter { $0 != .onBoat }
+        BoatFunction.allCases.filter { item in
+            if item == .wake, boat.wakeZoneID == nil { return false }
+            if item == .onBoat, !allowsExit { return false }
+            return true
+        }
+    }
+
+    public var currentFunctionTitle: String {
+        if function == .wake, !boat.wakeZoneName.isEmpty {
+            return boat.wakeZoneName
+        }
+        return function.title
     }
 
     /// The Done row is only offered when water controls were turned on by hand.
@@ -114,7 +161,18 @@ public struct CrownController: Equatable, Sendable {
     /// Copies a live boat frame onto the display. A confirming gesture keeps its pending value.
     public mutating func adoptBoat(_ state: BoatState) {
         guard phase != .confirming else { return }
+        let savedPounds = boat.ballastPounds
         boat = state
+        boat.ballastPounds = savedPounds
+        if boat.wakeZoneID == nil, function == .wake {
+            function = .volume
+            phase = .browsing
+            pendingDirection = nil
+        }
+    }
+
+    public mutating func setBallastPounds(_ pounds: Int) {
+        boat.ballastPounds = BoatState.snapBallastPounds(pounds)
     }
 
     /// Drops any armed or unconfirmed crown gesture and shows the function list.
@@ -151,9 +209,27 @@ public struct CrownController: Equatable, Sendable {
         return .volume(next)
     }
 
-    public mutating func shiftBallast(port: Bool, at time: Date) -> BoatCommand {
+    public mutating func changeWakeVolume(up: Bool, at time: Date) -> BoatCommand? {
         showList(at: time)
-        return .ballast(port: port)
+        return stepWake(up: up)
+    }
+
+    public mutating func shiftBallast(port: Bool, pounds: Int? = nil, at time: Date) -> BoatCommand {
+        showList(at: time)
+        let resolved = BoatState.snapBallastPounds(pounds ?? boat.ballastPounds)
+        boat.shifting = true
+        return .ballast(port: port, pounds: resolved)
+    }
+
+    public mutating func stopBallast(at time: Date) -> BoatCommand {
+        showList(at: time)
+        boat.shifting = false
+        return .stopBallast
+    }
+
+    public mutating func skipTrack(next: Bool, at time: Date) -> BoatCommand {
+        showList(at: time)
+        return .track(next: next)
     }
 
     /// Moves to the next function, or sends a speed or ballast change that is waiting.
@@ -335,11 +411,17 @@ public struct CrownController: Equatable, Sendable {
             String(format: "%.1f", Double(displayedSpeedTenths) / 10)
         case .volume:
             "\(displayedVolume)"
+        case .wake:
+            "\(displayedWakeVolume)"
+        case .track:
+            "SKIP"
         case .ballast:
-            if phase == .confirming {
+            if boat.shifting {
+                "STOP"
+            } else if phase == .confirming {
                 (pendingDirection ?? 0) > 0 ? "STBD" : "PORT"
             } else {
-                "SHIFT"
+                "\(boat.ballastPounds)"
             }
         case .onBoat:
             "BOAT"
@@ -348,9 +430,24 @@ public struct CrownController: Equatable, Sendable {
 
     public var unitText: String {
         switch function {
-        case .speed: "MPH"
-        case .volume: "VOL"
-        case .side, .ballast, .onBoat: ""
+        case .speed:
+            "MPH"
+        case .volume:
+            "VOL"
+        case .wake:
+            "VOL"
+        case .track:
+            "NEXT / PREV"
+        case .ballast:
+            if boat.shifting {
+                "PUMPS"
+            } else if phase == .confirming {
+                "\(boat.ballastPounds) LB"
+            } else {
+                "LB"
+            }
+        case .side, .onBoat:
+            ""
         }
     }
 
@@ -358,6 +455,8 @@ public struct CrownController: Equatable, Sendable {
         switch (function, phase) {
         case (.onBoat, .armed), (.onBoat, .confirming):
             "Turn to go back"
+        case (.ballast, .armed) where boat.shifting:
+            "Turn to stop"
         case (_, .browsing):
             "Turn to switch"
         case (_, .armed):
@@ -386,6 +485,10 @@ public struct CrownController: Equatable, Sendable {
             return boat.volume
         }
         return snapped(boat.volume + pendingDirection, in: Self.volumeRange)
+    }
+
+    private var displayedWakeVolume: Int {
+        snapped(boat.wakeVolume, in: StereoZone.volumeRange)
     }
 
     private mutating func addSpinStep(_ sign: Int, at time: Date) {
@@ -448,6 +551,13 @@ public struct CrownController: Equatable, Sendable {
         function = items[next]
     }
 
+    private mutating func stepWake(up: Bool) -> BoatCommand? {
+        guard let wakeID = boat.wakeZoneID else { return nil }
+        let delta = up ? StereoZone.stepSize : -StereoZone.stepSize
+        boat.wakeVolume = snapped(boat.wakeVolume + delta, in: StereoZone.volumeRange)
+        return .zoneStep(id: wakeID, up: up)
+    }
+
     private mutating func sendRide(_ direction: Int) -> BoatCommand? {
         switch function {
         case .side:
@@ -457,13 +567,22 @@ public struct CrownController: Equatable, Sendable {
             guard next != boat.volume else { return nil }
             boat.volume = next
             return .volume(next)
+        case .wake:
+            return stepWake(up: direction > 0)
+        case .track:
+            return .track(next: direction > 0)
         case .speed:
             let next = snapped(boat.speedTenths + direction, in: Self.speedRange)
             guard next != boat.speedTenths else { return nil }
             boat.speedTenths = next
             return .speed(tenths: next)
         case .ballast:
-            return .ballast(port: direction < 0)
+            if boat.shifting {
+                boat.shifting = false
+                return .stopBallast
+            }
+            boat.shifting = true
+            return .ballast(port: direction < 0, pounds: boat.ballastPounds)
         case .onBoat:
             return .leaveWater
         }
@@ -482,11 +601,23 @@ public struct CrownController: Equatable, Sendable {
             guard next != boat.volume else { return nil }
             boat.volume = next
             return .volume(next)
-        case .speed, .ballast:
-            let candidate = function == .speed
-                ? snapped(boat.speedTenths + direction, in: Self.speedRange)
-                : direction
-            guard function == .ballast || candidate != boat.speedTenths else { return nil }
+        case .wake:
+            return stepWake(up: direction > 0)
+        case .track:
+            return .track(next: direction > 0)
+        case .speed:
+            let candidate = snapped(boat.speedTenths + direction, in: Self.speedRange)
+            guard candidate != boat.speedTenths else { return nil }
+            phase = .confirming
+            pendingDirection = direction
+            return nil
+        case .ballast:
+            if boat.shifting {
+                boat.shifting = false
+                phase = .armed
+                pendingDirection = nil
+                return .stopBallast
+            }
             phase = .confirming
             pendingDirection = direction
             return nil
@@ -505,10 +636,15 @@ public struct CrownController: Equatable, Sendable {
             boat.speedTenths = next
             return .speed(tenths: next)
         case .ballast:
-            return .ballast(port: direction < 0)
+            if boat.shifting {
+                boat.shifting = false
+                return .stopBallast
+            }
+            boat.shifting = true
+            return .ballast(port: direction < 0, pounds: boat.ballastPounds)
         case .side:
             return changeSide(to: direction < 0, at: lastEvent)
-        case .volume, .onBoat:
+        case .volume, .wake, .track, .onBoat:
             return nil
         }
     }
