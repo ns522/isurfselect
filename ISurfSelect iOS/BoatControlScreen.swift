@@ -6,6 +6,7 @@ struct BoatControlScreen: View {
     @StateObject private var central = BoatCentral()
     @AppStorage("ballastPounds") private var ballastPounds = 50
     @State private var showFirmware = false
+    @State private var ballastTowardPort = true
 
     private var frame: SurfFrame { central.frame }
     private var boat: BoatState { frame.boatState }
@@ -18,15 +19,15 @@ struct BoatControlScreen: View {
                 statusHeader
                 ScrollView {
                     VStack(spacing: 14) {
-                        liveFrame
+                        shapeControl
                         sideControl
                         speedControl
                         volumeControl
+                        musicControl
                         if !central.zones.isEmpty {
                             zonesControl
                         }
                         ballastControl
-                        shapeControl
                         firmwareCard
                     }
                     .padding(16)
@@ -43,18 +44,23 @@ struct BoatControlScreen: View {
     }
 
     private var statusHeader: some View {
-        Text(statusText)
-            .font(.title2.weight(.bold))
-            .foregroundStyle(statusColor)
-            .multilineTextAlignment(.center)
-            .lineLimit(3)
-            .minimumScaleFactor(0.7)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(statusColor.opacity(0.16))
-            .accessibilityLabel("Connection")
-            .accessibilityValue(statusText)
+        HStack(spacing: 8) {
+            Circle()
+                .fill(statusColor)
+                .frame(width: 8, height: 8)
+            Text(statusText)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(statusColor)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(statusColor.opacity(0.12))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Connection")
+        .accessibilityValue(statusText)
     }
 
     private var statusText: String {
@@ -85,54 +91,38 @@ struct BoatControlScreen: View {
         }
     }
 
-    private var liveFrame: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 14) {
-                LazyVGrid(
-                    columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)],
-                    alignment: .leading,
-                    spacing: 14
-                ) {
-                    readout("Side", boat.port ? "Port" : "Starboard")
-                    readout("Speed", String(format: "%.1f mph", boat.speedMph))
-                    readout("Shape", "\(frame.shape)")
-                    readout("Volume", "\(boat.volume)")
-                    readout("Shift", frame.shifting ? "Running" : "Idle")
-                }
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Song")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.55))
-                    Text(central.song.isEmpty ? "—" : central.song)
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-            .accessibilityElement(children: .combine)
-
-            HStack(spacing: 12) {
-                trackButton("Prev", systemImage: "backward.end.fill", label: "Previous track") {
-                    central.send(.track(next: false))
-                }
-                trackButton("Next", systemImage: "forward.end.fill", label: "Next track") {
-                    central.send(.track(next: true))
+    private var musicControl: some View {
+        controlCard("Music") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(central.song.isEmpty ? "—" : central.song)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityLabel("Song")
+                    .accessibilityValue(central.song.isEmpty ? "None" : central.song)
+                HStack(spacing: 12) {
+                    trackButton("Prev", systemImage: "backward.end.fill", label: "Previous track") {
+                        central.send(.track(next: false))
+                    }
+                    trackButton("Next", systemImage: "forward.end.fill", label: "Next track") {
+                        central.send(.track(next: true))
+                    }
                 }
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private var sideControl: some View {
         controlCard("Side") {
-            HStack(spacing: 12) {
-                choice("Port", selected: boat.port) {
-                    central.send(.side(port: true))
-                }
-                choice("Starboard", selected: !boat.port) {
-                    central.send(.side(port: false))
+            VStack(spacing: 12) {
+                SideGraphic(port: boat.port)
+                HStack(spacing: 12) {
+                    choice("Port", selected: boat.port) {
+                        central.send(.side(port: true))
+                    }
+                    choice("Starboard", selected: !boat.port) {
+                        central.send(.side(port: false))
+                    }
                 }
             }
         }
@@ -140,30 +130,50 @@ struct BoatControlScreen: View {
 
     private var speedControl: some View {
         controlCard("Speed") {
-            stepper(
-                value: String(format: "%.1f", boat.speedMph),
-                unit: "mph",
-                canDecrease: canStep(boat.speedTenths, up: false, range: CrownController.speedRange),
-                canIncrease: canStep(boat.speedTenths, up: true, range: CrownController.speedRange),
-                decreaseLabel: "Decrease speed",
-                increaseLabel: "Increase speed"
-            ) { up in
-                changeSpeed(up: up)
+            VStack(spacing: 12) {
+                LevelPips(
+                    filled: filledMarks(
+                        value: boat.speedTenths,
+                        range: CrownController.speedRange,
+                        total: 7
+                    ),
+                    total: 7,
+                    value: String(format: "%.1f", boat.speedMph),
+                    unit: "mph"
+                )
+                valueStepper(
+                    canDecrease: canStep(boat.speedTenths, up: false, range: CrownController.speedRange),
+                    canIncrease: canStep(boat.speedTenths, up: true, range: CrownController.speedRange),
+                    decreaseLabel: "Decrease speed",
+                    increaseLabel: "Increase speed"
+                ) { up in
+                    changeSpeed(up: up)
+                }
             }
         }
     }
 
     private var volumeControl: some View {
         controlCard("Volume") {
-            stepper(
-                value: "\(boat.volume)",
-                unit: "",
-                canDecrease: canStep(boat.volume, up: false, range: CrownController.volumeRange),
-                canIncrease: canStep(boat.volume, up: true, range: CrownController.volumeRange),
-                decreaseLabel: "Decrease volume",
-                increaseLabel: "Increase volume"
-            ) { up in
-                changeVolume(up: up)
+            VStack(spacing: 12) {
+                LevelPips(
+                    filled: filledMarks(
+                        value: boat.volume,
+                        range: CrownController.volumeRange,
+                        total: 8
+                    ),
+                    total: 8,
+                    value: "\(boat.volume)",
+                    unit: ""
+                )
+                valueStepper(
+                    canDecrease: canStep(boat.volume, up: false, range: CrownController.volumeRange),
+                    canIncrease: canStep(boat.volume, up: true, range: CrownController.volumeRange),
+                    decreaseLabel: "Decrease volume",
+                    increaseLabel: "Increase volume"
+                ) { up in
+                    changeVolume(up: up)
+                }
             }
         }
     }
@@ -171,6 +181,7 @@ struct BoatControlScreen: View {
     private var zonesControl: some View {
         controlCard("Stereo Zones") {
             VStack(spacing: 16) {
+                ZoneColumns(zones: central.zones)
                 ForEach(central.zones) { zone in
                     StereoZoneControlRow(
                         zone: zone,
@@ -189,9 +200,12 @@ struct BoatControlScreen: View {
     private var ballastControl: some View {
         controlCard("Ballast") {
             VStack(spacing: 12) {
-                stepper(
-                    value: "\(snappedBallastPounds)",
-                    unit: "lbs",
+                BallastGraphic(
+                    pounds: snappedBallastPounds,
+                    port: ballastTowardPort,
+                    running: frame.shifting
+                )
+                valueStepper(
                     canDecrease: snappedBallastPounds > SurfFrame.ballastPoundsRange.lowerBound,
                     canIncrease: snappedBallastPounds < SurfFrame.ballastPoundsRange.upperBound,
                     decreaseLabel: "Decrease ballast weight",
@@ -201,11 +215,13 @@ struct BoatControlScreen: View {
                 }
 
                 HStack(spacing: 12) {
-                    choice("Port", selected: false) {
+                    choice("Port", selected: ballastTowardPort) {
+                        ballastTowardPort = true
                         central.send(.ballast(port: true, pounds: snappedBallastPounds))
                     }
                     .accessibilityLabel("Shift \(snappedBallastPounds) pounds ballast to port")
-                    choice("Starboard", selected: false) {
+                    choice("Starboard", selected: !ballastTowardPort) {
+                        ballastTowardPort = false
                         central.send(.ballast(port: false, pounds: snappedBallastPounds))
                     }
                     .accessibilityLabel("Shift \(snappedBallastPounds) pounds ballast to starboard")
@@ -268,31 +284,18 @@ struct BoatControlScreen: View {
 
     private var shapeControl: some View {
         controlCard("Shape") {
-            stepper(
-                value: "\(frame.shape)",
-                unit: "",
-                canDecrease: canStep(frame.shape, up: false, range: SurfFrame.shapeRange),
-                canIncrease: canStep(frame.shape, up: true, range: SurfFrame.shapeRange),
-                decreaseLabel: "Decrease shape",
-                increaseLabel: "Increase shape"
-            ) { up in
-                changeShape(up: up)
+            VStack(spacing: 12) {
+                WaveGraphic(shape: frame.shape, port: boat.port)
+                valueStepper(
+                    canDecrease: canStep(frame.shape, up: false, range: SurfFrame.shapeRange),
+                    canIncrease: canStep(frame.shape, up: true, range: SurfFrame.shapeRange),
+                    decreaseLabel: "Decrease shape",
+                    increaseLabel: "Increase shape"
+                ) { up in
+                    changeShape(up: up)
+                }
             }
         }
-    }
-
-    private func readout(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.white.opacity(0.55))
-            Text(value)
-                .font(.title2.weight(.bold).monospacedDigit())
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func controlCard<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -345,9 +348,7 @@ struct BoatControlScreen: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
-    private func stepper(
-        value: String,
-        unit: String,
+    private func valueStepper(
         canDecrease: Bool,
         canIncrease: Bool,
         decreaseLabel: String,
@@ -356,21 +357,17 @@ struct BoatControlScreen: View {
     ) -> some View {
         HStack(spacing: 12) {
             stepButton("−", label: decreaseLabel, enabled: canDecrease) { change(false) }
-            VStack(spacing: 0) {
-                Text(value)
-                    .font(.system(size: 40, weight: .bold, design: .rounded).monospacedDigit())
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                if !unit.isEmpty {
-                    Text(unit)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.6))
-                }
-            }
-            .frame(maxWidth: .infinity)
+            Spacer(minLength: 0)
             stepButton("+", label: increaseLabel, enabled: canIncrease) { change(true) }
         }
+    }
+
+    private func filledMarks(value: Int, range: ClosedRange<Int>, total: Int) -> Int {
+        let span = range.upperBound - range.lowerBound
+        guard span > 0, total > 0 else { return 0 }
+        let fraction = Double(value - range.lowerBound) / Double(span)
+        let clamped = min(max(fraction, 0), 1)
+        return Int((clamped * Double(total)).rounded())
     }
 
     private func stepButton(_ title: String, label: String, enabled: Bool, action: @escaping () -> Void) -> some View {
